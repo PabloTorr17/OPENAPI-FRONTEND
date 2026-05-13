@@ -8,7 +8,7 @@ import { authService } from '@/services/auth.service'
 import { useAuthStore } from '@/store/authStore'
 
 const schema = z.object({
-  email: z.string().email('Correo inválido'),
+  username: z.string().min(1, 'El usuario es obligatorio'),
   password: z.string().min(6, 'Mínimo 6 caracteres'),
 })
 
@@ -47,19 +47,19 @@ export default function LoginPage() {
 
         <form onSubmit={handleSubmit(onSubmit)} noValidate className="space-y-4">
           <div>
-            <label className="mb-1 block text-sm font-medium text-gray-700" htmlFor="email">
-              Correo electrónico
+            <label className="mb-1 block text-sm font-medium text-gray-700" htmlFor="username">
+              Usuario
             </label>
             <input
-              id="email"
-              type="email"
-              autoComplete="email"
-              {...register('email')}
+              id="username"
+              type="text"
+              autoComplete="username"
+              {...register('username')}
               className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-100"
-              aria-invalid={!!errors.email}
+              aria-invalid={!!errors.username}
             />
-            {errors.email && (
-              <p className="mt-1 text-xs text-red-500" role="alert">{errors.email.message}</p>
+            {errors.username && (
+              <p className="mt-1 text-xs text-red-500" role="alert">{errors.username.message}</p>
             )}
           </div>
 
