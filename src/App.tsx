@@ -8,9 +8,9 @@ import DashboardPage from '@/pages/DashboardPage'
 import MateriasPage from '@/pages/MateriasPage'
 import GruposPage from '@/pages/GruposPage'
 import AlumnosPage from '@/pages/AlumnosPage'
-// import EquiposPage from '@/pages/EquiposPage'
-// import ExposicionesPage from '@/pages/ExposicionesPage'
-// import EvaluacionesPage from '@/pages/EvaluacionesPage'
+import EquiposPage from '@/pages/EquiposPage'
+import ExposicionesPage from '@/pages/ExposicionesPage'
+import EvaluacionesPage from '@/pages/EvaluacionesPage'
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const token = useAuthStore((s) => s.token)
@@ -38,10 +38,10 @@ export default function App() {
         {/* Cada rama activa su propia ruta descomentando aquí */}
         { <Route path="materias"    element={<MateriasPage />} /> }
         { <Route path="grupos"      element={<GruposPage />} /> }
-        {<Route path="alumnos"     element={<AlumnosPage />} />}
-        {/* <Route path="equipos"     element={<EquiposPage />} /> */}
-        {/* <Route path="exposiciones" element={<ExposicionesPage />} /> */}
-        {/* <Route path="evaluaciones" element={<EvaluacionesPage />} /> */}
+        {<Route path="alumnos"     element={<AlumnosPage />} /> }
+        {<Route path="equipos"     element={<EquiposPage />} /> }
+        {<Route path="exposiciones" element={<ExposicionesPage />} /> }
+        { <Route path="evaluaciones" element={<EvaluacionesPage />} /> }
 
         {/* Fallback */}
         <Route path="*" element={<Navigate to="/" replace />} />
