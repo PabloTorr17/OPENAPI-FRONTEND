@@ -3,7 +3,7 @@ import { Search, Plus, Pencil, Trash2, ChevronLeft, ChevronRight, Loader2, Calen
 import { useExposiciones, useCrearExposicion, useActualizarExposicion, useEliminarExposicion } from '@/hooks/useExposiciones'
 import ExposicionForm from '@/components/exposiciones/ExposicionForm'
 import Modal from '@/components/ui/Modal'
-import ConfirmDialog from '@/components/ui/confirmDialog'
+import ConfirmDialog from '@/components/ui/ConfirmDialog'
 import type { Exposicion } from '@/types/exposiciones.types'
 
 function formatDate(iso: string) {
@@ -14,7 +14,7 @@ function formatDate(iso: string) {
 
 function StatusBadge({ fecha }: { fecha: string }) {
   const diff = new Date(fecha).getTime() - Date.now()
-  if (diff < 0)         return <span className="rounded-full bg-slate-100 px-2 py-0.5 text-xs font-medium text-slate-500">Realizada</span>
+  if (diff < 0)          return <span className="rounded-full bg-slate-100 px-2 py-0.5 text-xs font-medium text-slate-500">Realizada</span>
   if (diff < 86_400_000) return <span className="rounded-full bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-700">Hoy</span>
   return                        <span className="rounded-full bg-green-100 px-2 py-0.5 text-xs font-medium text-green-700">Próxima</span>
 }
@@ -37,8 +37,12 @@ export default function ExposicionesPage() {
   const closeModal = () => { setModalOpen(false); setEditTarget(null) }
 
   const handleSubmit = async (values: any) => {
-    if (editTarget) await actualizar.mutateAsync({ id: editTarget.id_exposicion, body: values })
-    else await crear.mutateAsync(values)
+    // Limpiar descripcion vacía antes de enviar
+    const body = { ...values }
+    if (!body.descripcion) delete body.descripcion
+
+    if (editTarget) await actualizar.mutateAsync({ id: editTarget.id_exposicion, body })
+    else await crear.mutateAsync(body)
     closeModal()
   }
 
@@ -61,7 +65,7 @@ export default function ExposicionesPage() {
         <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
         <input type="search" value={search}
           onChange={(e) => { setSearch(e.target.value); setPage(0) }}
-          placeholder="Buscar por tema…"
+          placeholder="Buscar por título…"
           aria-label="Buscar exposiciones"
           className="w-full rounded-xl border border-slate-200 bg-white py-2 pl-9 pr-4 text-sm outline-none focus:border-violet-400 focus:ring-2 focus:ring-violet-100 transition-all" />
       </div>
@@ -93,7 +97,7 @@ export default function ExposicionesPage() {
             <table className="w-full text-sm" aria-label="Tabla de exposiciones">
               <thead>
                 <tr className="border-b border-slate-100 bg-slate-50 text-left">
-                  {['Tema', 'Fecha', 'Equipo', 'Estado', 'Acciones'].map((h) => (
+                  {['Título', 'Fecha', 'Equipo', 'Rúbrica', 'Estado', 'Acciones'].map((h) => (
                     <th key={h} className="px-4 py-3 text-xs font-semibold uppercase tracking-wide text-slate-500">{h}</th>
                   ))}
                 </tr>
@@ -101,15 +105,18 @@ export default function ExposicionesPage() {
               <tbody className="divide-y divide-slate-100">
                 {data!.content.map((expo) => (
                   <tr key={expo.id_exposicion} className="group hover:bg-violet-50/40 transition-colors">
-                    <td className="px-4 py-3 font-medium text-slate-800 max-w-xs truncate">{expo.tema}</td>
-                    <td className="px-4 py-3 text-slate-500 whitespace-nowrap">{formatDate(expo.fecha)}</td>
+                    {/* ✅ titulo en lugar de tema */}
+                    <td className="px-4 py-3 font-medium text-slate-800 max-w-xs truncate">{expo.titulo}</td>
+                    {/* ✅ fecha_exposicion en lugar de fecha */}
+                    <td className="px-4 py-3 text-slate-500 whitespace-nowrap">{formatDate(expo.fecha_exposicion)}</td>
                     <td className="px-4 py-3 text-slate-500">{expo.nombre_equipo ?? `Equipo ${expo.id_equipo}`}</td>
-                    <td className="px-4 py-3"><StatusBadge fecha={expo.fecha} /></td>
+                    <td className="px-4 py-3 text-slate-500">{expo.id_rubrica}</td>
+                    <td className="px-4 py-3"><StatusBadge fecha={expo.fecha_exposicion} /></td>
                     <td className="px-4 py-3">
                       <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                        <button onClick={() => openEdit(expo)} aria-label={`Editar ${expo.tema}`}
+                        <button onClick={() => openEdit(expo)} aria-label={`Editar ${expo.titulo}`}
                           className="rounded-lg p-1.5 text-slate-400 hover:bg-violet-100 hover:text-violet-600 transition-colors"><Pencil size={14} /></button>
-                        <button onClick={() => setDeleteTarget(expo)} aria-label={`Eliminar ${expo.tema}`}
+                        <button onClick={() => setDeleteTarget(expo)} aria-label={`Eliminar ${expo.titulo}`}
                           className="rounded-lg p-1.5 text-slate-400 hover:bg-red-100 hover:text-red-600 transition-colors"><Trash2 size={14} /></button>
                       </div>
                     </td>
@@ -142,7 +149,7 @@ export default function ExposicionesPage() {
       <ConfirmDialog
         open={!!deleteTarget}
         title="Eliminar exposición"
-        message={`¿Eliminar "${deleteTarget?.tema}"? Esta acción no se puede deshacer.`}
+        message={`¿Eliminar "${deleteTarget?.titulo}"? Esta acción no se puede deshacer.`}
         loading={eliminar.isPending}
         onConfirm={async () => { await eliminar.mutateAsync(deleteTarget!.id_exposicion); setDeleteTarget(null) }}
         onCancel={() => setDeleteTarget(null)}

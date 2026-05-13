@@ -1,15 +1,19 @@
 export interface Exposicion {
   id_exposicion: number
-  tema: string
-  fecha: string
+  titulo: string
+  fecha_exposicion: string
+  descripcion?: string
   id_equipo: number
+  id_rubrica: number
   nombre_equipo?: string
 }
 
 export interface ExposicionInput {
-  tema: string
-  fecha: string
   id_equipo: number
+  id_rubrica: number
+  titulo: string
+  fecha_exposicion: string
+  descripcion?: string
 }
 
 export interface PagedExposiciones {

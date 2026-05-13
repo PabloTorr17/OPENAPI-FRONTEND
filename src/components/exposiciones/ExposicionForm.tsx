@@ -5,9 +5,15 @@ import { z } from 'zod'
 import type { Exposicion } from '@/types/exposiciones.types'
 
 const schema = z.object({
-  tema: z.string().min(3, 'Mínimo 3 caracteres').max(200),
-  fecha: z.string().min(1, 'La fecha es requerida'),
-  id_equipo: z.number({ coerce: true, invalid_type_error: 'Requerido' }).positive('ID de equipo inválido'),
+  titulo: z.string().min(3, 'Mínimo 3 caracteres').max(200),
+  fecha_exposicion: z.string().min(1, 'La fecha es requerida'),
+  id_equipo: z
+    .number({ coerce: true, invalid_type_error: 'Requerido' })
+    .positive('ID de equipo inválido'),
+  id_rubrica: z
+    .number({ coerce: true, invalid_type_error: 'Requerido' })
+    .positive('ID de rúbrica inválido'),
+  descripcion: z.string().max(500).optional().or(z.literal('')),
 })
 
 type FormValues = z.infer<typeof schema>
@@ -26,8 +32,20 @@ export default function ExposicionForm({ initial, onSubmit, loading, onCancel }:
 
   useEffect(() => {
     reset(initial
-      ? { tema: initial.tema, fecha: initial.fecha.slice(0, 16), id_equipo: initial.id_equipo }
-      : { tema: '', fecha: '', id_equipo: undefined as any }
+      ? {
+          titulo:           initial.titulo,
+          fecha_exposicion: initial.fecha_exposicion.slice(0, 16),
+          id_equipo:        initial.id_equipo,
+          id_rubrica:       initial.id_rubrica,
+          descripcion:      initial.descripcion ?? '',
+        }
+      : {
+          titulo:           '',
+          fecha_exposicion: '',
+          id_equipo:        undefined as any,
+          id_rubrica:       undefined as any,
+          descripcion:      '',
+        }
     )
   }, [initial, reset])
 
@@ -38,24 +56,39 @@ export default function ExposicionForm({ initial, onSubmit, loading, onCancel }:
   return (
     <form onSubmit={handleSubmit(onSubmit)} noValidate className="space-y-4">
       <div>
-        <label className={lbl} htmlFor="tema">Tema de la exposición *</label>
-        <input id="tema" {...register('tema')} className={field}
-          aria-invalid={!!errors.tema} placeholder="Ej. Patrones de diseño en REST" />
-        {errors.tema && <p className={err} role="alert">{errors.tema.message}</p>}
+        <label className={lbl} htmlFor="titulo">Título de la exposición *</label>
+        <input id="titulo" {...register('titulo')} className={field}
+          aria-invalid={!!errors.titulo} placeholder="Ej. Patrones de diseño en REST" />
+        {errors.titulo && <p className={err} role="alert">{errors.titulo.message}</p>}
       </div>
 
       <div>
-        <label className={lbl} htmlFor="fecha">Fecha y hora *</label>
-        <input id="fecha" type="datetime-local" {...register('fecha')} className={field}
-          aria-invalid={!!errors.fecha} />
-        {errors.fecha && <p className={err} role="alert">{errors.fecha.message}</p>}
+        <label className={lbl} htmlFor="fecha_exposicion">Fecha y hora *</label>
+        <input id="fecha_exposicion" type="datetime-local" {...register('fecha_exposicion')} className={field}
+          aria-invalid={!!errors.fecha_exposicion} />
+        {errors.fecha_exposicion && <p className={err} role="alert">{errors.fecha_exposicion.message}</p>}
+      </div>
+
+      <div className="grid grid-cols-2 gap-3">
+        <div>
+          <label className={lbl} htmlFor="id_equipo">ID del equipo *</label>
+          <input id="id_equipo" type="number" {...register('id_equipo')} className={field}
+            aria-invalid={!!errors.id_equipo} placeholder="ID del equipo" />
+          {errors.id_equipo && <p className={err} role="alert">{errors.id_equipo.message}</p>}
+        </div>
+        <div>
+          <label className={lbl} htmlFor="id_rubrica">ID de rúbrica *</label>
+          <input id="id_rubrica" type="number" {...register('id_rubrica')} className={field}
+            aria-invalid={!!errors.id_rubrica} placeholder="ID de rúbrica" />
+          {errors.id_rubrica && <p className={err} role="alert">{errors.id_rubrica.message}</p>}
+        </div>
       </div>
 
       <div>
-        <label className={lbl} htmlFor="id_equipo">ID del equipo expositor *</label>
-        <input id="id_equipo" type="number" {...register('id_equipo')} className={field}
-          aria-invalid={!!errors.id_equipo} placeholder="ID del equipo" />
-        {errors.id_equipo && <p className={err} role="alert">{errors.id_equipo.message}</p>}
+        <label className={lbl} htmlFor="descripcion">Descripción (opcional)</label>
+        <textarea id="descripcion" {...register('descripcion')} className={`${field} resize-none`}
+          rows={3} placeholder="Descripción breve de la exposición" />
+        {errors.descripcion && <p className={err} role="alert">{errors.descripcion.message}</p>}
       </div>
 
       <div className="flex justify-end gap-3 pt-2">
