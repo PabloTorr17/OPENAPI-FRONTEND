@@ -5,7 +5,7 @@ import LoginPage from '@/pages/LoginPage'
 import DashboardPage from '@/pages/DashboardPage'
 
 // Lazy pages — cada módulo las implementa en su rama
-// import MateriasPage from '@/pages/MateriasPage'
+import MateriasPage from '@/pages/MateriasPage'
 // import GruposPage from '@/pages/GruposPage'
 // import AlumnosPage from '@/pages/AlumnosPage'
 // import EquiposPage from '@/pages/EquiposPage'
@@ -36,7 +36,7 @@ export default function App() {
         <Route index element={<DashboardPage />} />
 
         {/* Cada rama activa su propia ruta descomentando aquí */}
-        {/* <Route path="materias"    element={<MateriasPage />} /> */}
+        { <Route path="materias"    element={<MateriasPage />} /> }
         {/* <Route path="grupos"      element={<GruposPage />} /> */}
         {/* <Route path="alumnos"     element={<AlumnosPage />} /> */}
         {/* <Route path="equipos"     element={<EquiposPage />} /> */}
