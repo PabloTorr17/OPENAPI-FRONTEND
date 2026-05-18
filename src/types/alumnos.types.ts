@@ -2,7 +2,7 @@ export interface Alumno {
   id_alumno: number
   matricula: string
   nombre: string
-  apellido_pat: string   // campo real del backend
+  apellido_pat: string
   apellido_mat?: string
   email: string
   id_grupo?: number
@@ -12,8 +12,10 @@ export interface Alumno {
 export interface AlumnoInput {
   matricula: string
   nombre: string
-  apellido_pat: string   // único campo — el backend acepta apellido_pat
+  apellido_pat: string
+  apellido_mat?: string
   email: string
+  password: string
   id_grupo?: number
 }
 
