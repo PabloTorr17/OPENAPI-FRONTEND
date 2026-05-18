@@ -1,5 +1,5 @@
 import { useNavigate } from 'react-router-dom'
-import { useQuery } from '@tanstack/react-query'
+import { useQuery } from '@tanstack/react-query' 
 import {
   BookOpen, Users, GraduationCap, UsersRound, Presentation, ClipboardCheck,
   TrendingUp, Activity,
