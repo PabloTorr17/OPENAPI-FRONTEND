@@ -8,22 +8,19 @@ import { authService } from '@/services/auth.service'
 import { useAuthStore } from '@/store/authStore'
 
 const schema = z.object({
-  username: z.string().min(1, 'El usuario es obligatorio'),
+  username: z.string().min(1, 'Requerido'),
   password: z.string().min(6, 'Mínimo 6 caracteres'),
 })
-
 type FormValues = z.infer<typeof schema>
 
 export default function LoginPage() {
   const navigate = useNavigate()
-  const setAuth = useAuthStore((s) => s.setAuth)
+  const setAuth  = useAuthStore((s) => s.setAuth)
   const [loading, setLoading] = useState(false)
 
-  const {
-    register,
-    handleSubmit,
-    formState: { errors },
-  } = useForm<FormValues>({ resolver: zodResolver(schema) })
+  const { register, handleSubmit, formState: { errors } } = useForm<FormValues>({
+    resolver: zodResolver(schema),
+  })
 
   const onSubmit = async (data: FormValues) => {
     setLoading(true)
@@ -40,54 +37,87 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-gray-50 px-4">
-      <div className="w-full max-w-sm rounded-2xl bg-white p-8 shadow-sm border border-gray-200">
-        <h1 className="mb-1 text-2xl font-bold text-gray-900">Iniciar sesión</h1>
-        <p className="mb-6 text-sm text-gray-500">Sistema de Evaluaciones</p>
+    <div
+      className="min-h-screen flex items-center justify-center px-4"
+      style={{ background: 'var(--paper)' }}
+    >
+      {/* Decorative lines */}
+      <div
+        className="absolute inset-0 pointer-events-none"
+        style={{
+          backgroundImage: 'repeating-linear-gradient(0deg, transparent, transparent 39px, #00000008 39px, #00000008 40px)',
+        }}
+      />
 
-        <form onSubmit={handleSubmit(onSubmit)} noValidate className="space-y-4">
-          <div>
-            <label className="mb-1 block text-sm font-medium text-gray-700" htmlFor="username">
-              Usuario
-            </label>
-            <input
-              id="username"
-              type="text"
-              autoComplete="username"
-              {...register('username')}
-              className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-100"
-              aria-invalid={!!errors.username}
-            />
-            {errors.username && (
-              <p className="mt-1 text-xs text-red-500" role="alert">{errors.username.message}</p>
-            )}
+      <div className="relative w-full max-w-sm">
+        {/* Header block */}
+        <div
+          className="bg-[var(--ink)] text-[var(--paper)] px-8 py-8"
+          style={{ border: '3px solid var(--ink)' }}
+        >
+          <div className="font-display text-5xl font-black uppercase tracking-tight leading-none">
+            EVAL
           </div>
-
-          <div>
-            <label className="mb-1 block text-sm font-medium text-gray-700" htmlFor="password">
-              Contraseña
-            </label>
-            <input
-              id="password"
-              type="password"
-              autoComplete="current-password"
-              {...register('password')}
-              className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-100"
-              aria-invalid={!!errors.password}
-            />
-            {errors.password && (
-              <p className="mt-1 text-xs text-red-500" role="alert">{errors.password.message}</p>
-            )}
+          <div className="font-mono-brut text-xs text-gray-400 tracking-widest mt-2 uppercase">
+            Sistema de Evaluaciones
           </div>
+        </div>
 
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full rounded-lg bg-primary-600 px-4 py-2 text-sm font-semibold text-white hover:bg-primary-700 disabled:opacity-60 transition-colors"
+        {/* Form block */}
+        <div
+          className="bg-white px-8 py-8 space-y-5"
+          style={{
+            border: '3px solid var(--ink)',
+            borderTop: 'none',
+            boxShadow: '6px 6px 0 var(--ink)',
+          }}
+        >
+          <form onSubmit={handleSubmit(onSubmit)} noValidate className="space-y-4">
+            <div>
+              <label className="field-label" htmlFor="username">Usuario</label>
+              <input
+                id="username"
+                type="text"
+                autoComplete="username"
+                {...register('username')}
+                className="field"
+                placeholder="tu_usuario"
+                aria-invalid={!!errors.username}
+              />
+              {errors.username && <p className="field-error">{errors.username.message}</p>}
+            </div>
+
+            <div>
+              <label className="field-label" htmlFor="password">Contraseña</label>
+              <input
+                id="password"
+                type="password"
+                autoComplete="current-password"
+                {...register('password')}
+                className="field"
+                placeholder="••••••••"
+                aria-invalid={!!errors.password}
+              />
+              {errors.password && <p className="field-error">{errors.password.message}</p>}
+            </div>
+
+            <button
+              type="submit"
+              disabled={loading}
+              className="btn btn-acid w-full justify-center mt-2"
+              style={{ fontSize: 15 }}
+            >
+              {loading ? 'Ingresando…' : 'Ingresar →'}
+            </button>
+          </form>
+
+          <div
+            className="font-mono-brut text-[10px] text-gray-400 text-center pt-2"
+            style={{ borderTop: '2px solid #e5e5e5' }}
           >
-            {loading ? 'Ingresando…' : 'Ingresar'}
-          </button>
-        </form>
+            TecnmCelaya — TAP
+          </div>
+        </div>
       </div>
     </div>
   )

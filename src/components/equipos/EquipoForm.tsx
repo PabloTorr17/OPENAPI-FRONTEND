@@ -2,61 +2,85 @@ import { useEffect } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
+import { Loader2 } from 'lucide-react'
 import type { Equipo } from '@/types/equipos.types'
 
-const schema = z.object({
-  nombre_equipo: z.string().min(2, 'Mínimo 2 caracteres').max(80),
-  id_grupo: z.number({ coerce: true, invalid_type_error: 'Requerido' }).positive('ID de grupo inválido'),
+const schemaCreate = z.object({
+  nombre_equipo: z.string().min(2,'Mínimo 2').max(80),
+  id_grupo:      z.number({ coerce: true, invalid_type_error: 'Selecciona un grupo' }).positive('Selecciona un grupo'),
+  id_alumno_creador: z.number({ coerce: true, invalid_type_error: 'Requerido' }).positive('Requerido'),
+})
+const schemaEdit = z.object({
+  nombre_equipo: z.string().min(2,'Mínimo 2').max(80),
+  id_grupo:      z.number({ coerce: true, invalid_type_error: 'Selecciona un grupo' }).positive('Selecciona un grupo'),
+  id_alumno_creador: z.number({ coerce: true }).optional(),
 })
 
-type FormValues = z.infer<typeof schema>
+type CreateValues = z.infer<typeof schemaCreate>
+type EditValues   = z.infer<typeof schemaEdit>
+type FormValues   = CreateValues | EditValues
 
-interface EquipoFormProps {
+interface Props {
   initial?: Equipo | null
   onSubmit: (v: FormValues) => void
   loading?: boolean
   onCancel: () => void
+  grupos: { id_grupo: number; nombre_grupo: string; nombre_materia: string; semestre: string }[]
+  gruposLoading?: boolean
 }
 
-export default function EquipoForm({ initial, onSubmit, loading, onCancel }: EquipoFormProps) {
+export default function EquipoForm({ initial, onSubmit, loading, onCancel, grupos, gruposLoading }: Props) {
+  const isEditing = !!initial
   const { register, handleSubmit, reset, formState: { errors } } = useForm<FormValues>({
-    resolver: zodResolver(schema),
+    resolver: zodResolver(isEditing ? schemaEdit : schemaCreate),
   })
 
   useEffect(() => {
     reset(initial
       ? { nombre_equipo: initial.nombre_equipo, id_grupo: initial.id_grupo }
-      : { nombre_equipo: '', id_grupo: undefined as any }
+      : { nombre_equipo: '', id_grupo: undefined as any, id_alumno_creador: undefined as any }
     )
   }, [initial, reset])
-
-  const field = 'w-full rounded-lg border border-slate-200 px-3 py-2 text-sm outline-none focus:border-teal-500 focus:ring-2 focus:ring-teal-100 transition-all'
-  const lbl   = 'mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500'
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} noValidate className="space-y-4">
       <div>
-        <label className={lbl} htmlFor="nombre_equipo">Nombre del equipo *</label>
-        <input id="nombre_equipo" {...register('nombre_equipo')} className={field}
-          aria-invalid={!!errors.nombre_equipo} placeholder="Ej. Equipo Alpha" />
-        {errors.nombre_equipo && <p className="mt-1 text-xs text-red-500" role="alert">{errors.nombre_equipo.message}</p>}
+        <label className="field-label">Nombre del equipo *</label>
+        <input {...register('nombre_equipo')} className="field" placeholder="Ej. Equipo Alpha" />
+        {errors.nombre_equipo && <p className="field-error">{errors.nombre_equipo.message}</p>}
       </div>
 
       <div>
-        <label className={lbl} htmlFor="id_grupo">ID de Grupo *</label>
-        <input id="id_grupo" type="number" {...register('id_grupo')} className={field}
-          aria-invalid={!!errors.id_grupo} placeholder="ID del grupo al que pertenece" />
-        {errors.id_grupo && <p className="mt-1 text-xs text-red-500" role="alert">{errors.id_grupo.message}</p>}
+        <label className="field-label">Grupo *</label>
+        {gruposLoading ? (
+          <div className="field flex items-center gap-2 text-gray-400">
+            <Loader2 size={13} className="animate-spin" /> Cargando grupos…
+          </div>
+        ) : (
+          <select {...register('id_grupo')} className="field bg-white">
+            <option value="">Selecciona un grupo</option>
+            {grupos.map((g) => (
+              <option key={g.id_grupo} value={g.id_grupo}>
+                {g.nombre_grupo} — {g.nombre_materia} ({g.semestre})
+              </option>
+            ))}
+          </select>
+        )}
+        {errors.id_grupo && <p className="field-error">{errors.id_grupo.message}</p>}
       </div>
 
-      <div className="flex justify-end gap-3 pt-2">
-        <button type="button" onClick={onCancel}
-          className="rounded-lg px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-100 transition-colors">
-          Cancelar
-        </button>
-        <button type="submit" disabled={loading}
-          className="rounded-lg bg-teal-600 px-5 py-2 text-sm font-semibold text-white hover:bg-teal-700 disabled:opacity-50 transition-colors">
-          {loading ? 'Guardando…' : initial ? 'Actualizar' : 'Crear'}
+      {!isEditing && (
+        <div>
+          <label className="field-label">Tu ID de alumno (creador) *</label>
+          <input type="number" {...register('id_alumno_creador' as any)} className="field" placeholder="Tu ID" />
+          {(errors as any).id_alumno_creador && <p className="field-error">{(errors as any).id_alumno_creador.message}</p>}
+        </div>
+      )}
+
+      <div className="flex gap-3 pt-2" style={{ borderTop: '2px solid #e5e5e5' }}>
+        <button type="button" onClick={onCancel} className="btn btn-ghost flex-1 justify-center">Cancelar</button>
+        <button type="submit" disabled={loading || gruposLoading} className="btn flex-1 justify-center">
+          {loading ? 'Guardando…' : isEditing ? 'Actualizar' : 'Crear equipo'}
         </button>
       </div>
     </form>

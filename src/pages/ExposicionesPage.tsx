@@ -1,30 +1,30 @@
 import { useState } from 'react'
-import { Search, Plus, Pencil, Trash2, ChevronLeft, ChevronRight, Loader2, CalendarDays } from 'lucide-react'
+import { Search, Plus, Pencil, Trash2, ChevronLeft, ChevronRight, Loader2 } from 'lucide-react'
 import { useExposiciones, useCrearExposicion, useActualizarExposicion, useEliminarExposicion } from '@/hooks/useExposiciones'
 import ExposicionForm from '@/components/exposiciones/ExposicionForm'
 import Modal from '@/components/ui/Modal'
 import ConfirmDialog from '@/components/ui/ConfirmDialog'
+import EmptyState from '@/components/ui/EmptyState'
 import type { Exposicion } from '@/types/exposiciones.types'
 
-function formatDate(iso: string) {
-  try {
-    return new Intl.DateTimeFormat('es-MX', { dateStyle: 'medium', timeStyle: 'short' }).format(new Date(iso))
-  } catch { return iso }
+function fmt(iso: string) {
+  try { return new Intl.DateTimeFormat('es-MX', { dateStyle: 'short', timeStyle: 'short' }).format(new Date(iso)) }
+  catch { return iso }
 }
 
 function StatusBadge({ fecha }: { fecha: string }) {
   const diff = new Date(fecha).getTime() - Date.now()
-  if (diff < 0)          return <span className="rounded-full bg-slate-100 px-2 py-0.5 text-xs font-medium text-slate-500">Realizada</span>
-  if (diff < 86_400_000) return <span className="rounded-full bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-700">Hoy</span>
-  return                        <span className="rounded-full bg-green-100 px-2 py-0.5 text-xs font-medium text-green-700">Próxima</span>
+  if (diff < 0)          return <span className="badge" style={{ background: '#f3f4f6', borderColor: '#9ca3af', color: '#6b7280' }}>Realizada</span>
+  if (diff < 86_400_000) return <span className="badge" style={{ background: '#fef9c3', borderColor: '#ca8a04', color: '#92400e' }}>Hoy</span>
+  return                        <span className="badge" style={{ background: 'var(--acid)', borderColor: 'var(--ink)', color: 'var(--ink)' }}>Próxima</span>
 }
 
 export default function ExposicionesPage() {
   const [search, setSearch]             = useState('')
   const [page, setPage]                 = useState(0)
   const [modalOpen, setModalOpen]       = useState(false)
-  const [editTarget, setEditTarget]     = useState<Exposicion | null>(null)
-  const [deleteTarget, setDeleteTarget] = useState<Exposicion | null>(null)
+  const [editTarget, setEditTarget]     = useState<Exposicion|null>(null)
+  const [deleteTarget, setDeleteTarget] = useState<Exposicion|null>(null)
   const PAGE_SIZE = 10
 
   const { data, isLoading, isError } = useExposiciones({ search, page, size: PAGE_SIZE })
@@ -37,10 +37,8 @@ export default function ExposicionesPage() {
   const closeModal = () => { setModalOpen(false); setEditTarget(null) }
 
   const handleSubmit = async (values: any) => {
-    // Limpiar descripcion vacía antes de enviar
     const body = { ...values }
     if (!body.descripcion) delete body.descripcion
-
     if (editTarget) await actualizar.mutateAsync({ id: editTarget.id_exposicion, body })
     else await crear.mutateAsync(body)
     closeModal()
@@ -49,75 +47,66 @@ export default function ExposicionesPage() {
   const totalPages = data?.totalPages ?? 1
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
+    <div className="space-y-6 max-w-5xl">
+
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-slate-800">Exposiciones</h1>
-          <p className="text-sm text-slate-500">{data ? `${data.totalElements} exposición(es)` : 'Cargando…'}</p>
+          <h1 className="font-display text-5xl font-black uppercase tracking-tight leading-none">Exposiciones</h1>
+          <p className="font-mono-brut text-xs text-gray-500 mt-1">{data ? `${data.totalElements} registradas` : '—'}</p>
         </div>
-        <button onClick={openCreate}
-          className="flex items-center gap-2 rounded-xl bg-violet-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-violet-700 transition-colors shadow-sm">
-          <Plus size={16} /> Nueva exposición
+        <button onClick={openCreate} className="btn" style={{ background: '#7c3aed', borderColor: 'var(--ink)', color: '#fff' }}>
+          <Plus size={14} strokeWidth={2.5} /> Nueva exposición
         </button>
       </div>
 
+      {/* Search */}
       <div className="relative max-w-sm">
-        <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
-        <input type="search" value={search}
+        <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" strokeWidth={2.5} />
+        <input
+          type="search" value={search}
           onChange={(e) => { setSearch(e.target.value); setPage(0) }}
-          placeholder="Buscar por título…"
-          aria-label="Buscar exposiciones"
-          className="w-full rounded-xl border border-slate-200 bg-white py-2 pl-9 pr-4 text-sm outline-none focus:border-violet-400 focus:ring-2 focus:ring-violet-100 transition-all" />
+          placeholder="Buscar por título…" className="field pl-9"
+        />
       </div>
 
-      <div className="rounded-2xl border border-slate-200 bg-white overflow-hidden shadow-sm">
+      {/* Table */}
+      <div className="panel overflow-hidden">
         {isLoading && (
-          <div className="flex items-center justify-center py-20 gap-2 text-slate-400">
-            <Loader2 size={20} className="animate-spin" /><span className="text-sm">Cargando exposiciones…</span>
+          <div className="flex items-center justify-center py-20 gap-2 text-gray-400">
+            <Loader2 size={18} className="animate-spin" />
+            <span className="font-mono-brut text-sm">Cargando…</span>
           </div>
         )}
         {isError && !isLoading && (
           <div className="py-16 text-center">
-            <p className="text-sm font-semibold text-red-500">Error al cargar los datos</p>
+            <p className="font-display text-2xl font-black uppercase text-red-500">Error al cargar</p>
           </div>
         )}
         {!isLoading && !isError && data?.content.length === 0 && (
-          <div className="flex flex-col items-center justify-center py-16 text-center">
-            <div className="mb-4 h-14 w-14 rounded-full bg-violet-50 flex items-center justify-center">
-              <CalendarDays size={24} className="text-violet-400" />
-            </div>
-            <p className="text-sm font-semibold text-slate-700">Sin exposiciones</p>
-            <p className="text-xs text-slate-400 mt-1">
-              {search ? `Sin resultados para "${search}"` : 'Registra la primera exposición.'}
-            </p>
-          </div>
+          <EmptyState title="Sin exposiciones" description={search ? `Sin resultados para "${search}"` : 'Registra la primera exposición.'} />
         )}
         {!isLoading && !isError && (data?.content.length ?? 0) > 0 && (
           <div className="overflow-x-auto">
-            <table className="w-full text-sm" aria-label="Tabla de exposiciones">
+            <table className="brut-table">
               <thead>
-                <tr className="border-b border-slate-100 bg-slate-50 text-left">
-                  {['Título', 'Fecha', 'Equipo', 'Rúbrica', 'Estado', 'Acciones'].map((h) => (
-                    <th key={h} className="px-4 py-3 text-xs font-semibold uppercase tracking-wide text-slate-500">{h}</th>
-                  ))}
+                <tr>
+                  <th>Título</th><th>Fecha</th><th>Equipo</th><th>Estado</th><th style={{ textAlign: 'right' }}>Acciones</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-100">
+              <tbody>
                 {data!.content.map((expo) => (
-                  <tr key={expo.id_exposicion} className="group hover:bg-violet-50/40 transition-colors">
-                    {/* ✅ titulo en lugar de tema */}
-                    <td className="px-4 py-3 font-medium text-slate-800 max-w-xs truncate">{expo.titulo}</td>
-                    {/* ✅ fecha_exposicion en lugar de fecha */}
-                    <td className="px-4 py-3 text-slate-500 whitespace-nowrap">{formatDate(expo.fecha_exposicion)}</td>
-                    <td className="px-4 py-3 text-slate-500">{expo.nombre_equipo ?? `Equipo ${expo.id_equipo}`}</td>
-                    <td className="px-4 py-3 text-slate-500">{expo.id_rubrica}</td>
-                    <td className="px-4 py-3"><StatusBadge fecha={expo.fecha_exposicion} /></td>
-                    <td className="px-4 py-3">
-                      <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                        <button onClick={() => openEdit(expo)} aria-label={`Editar ${expo.titulo}`}
-                          className="rounded-lg p-1.5 text-slate-400 hover:bg-violet-100 hover:text-violet-600 transition-colors"><Pencil size={14} /></button>
-                        <button onClick={() => setDeleteTarget(expo)} aria-label={`Eliminar ${expo.titulo}`}
-                          className="rounded-lg p-1.5 text-slate-400 hover:bg-red-100 hover:text-red-600 transition-colors"><Trash2 size={14} /></button>
+                  <tr key={expo.id_exposicion}>
+                    <td className="font-bold max-w-xs">
+                      <span className="block truncate">{expo.titulo}</span>
+                    </td>
+                    <td className="font-mono-brut text-xs whitespace-nowrap">{fmt(expo.fecha_exposicion)}</td>
+                    <td className="text-gray-500 text-xs">{expo.nombre_equipo ?? `Equipo ${expo.id_equipo}`}</td>
+                    <td><StatusBadge fecha={expo.fecha_exposicion} /></td>
+                    <td>
+                      <div className="flex items-center justify-end gap-1">
+                        <button onClick={() => openEdit(expo)} className="btn btn-ghost btn-sm"><Pencil size={12} /></button>
+                        <button onClick={() => setDeleteTarget(expo)} className="btn btn-danger btn-sm"><Trash2 size={12} /></button>
                       </div>
                     </td>
                   </tr>
@@ -126,22 +115,19 @@ export default function ExposicionesPage() {
             </table>
           </div>
         )}
-        {!isLoading && (data?.totalPages ?? 0) > 1 && (
-          <div className="flex items-center justify-between border-t border-slate-100 px-4 py-3">
-            <p className="text-xs text-slate-500">Página {page + 1} de {totalPages}</p>
-            <div className="flex gap-1">
-              <button onClick={() => setPage((p) => Math.max(0, p - 1))} disabled={page === 0}
-                aria-label="Página anterior"
-                className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 disabled:opacity-30 transition-colors"><ChevronLeft size={16} /></button>
-              <button onClick={() => setPage((p) => Math.min(totalPages - 1, p + 1))} disabled={page >= totalPages - 1}
-                aria-label="Página siguiente"
-                className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 disabled:opacity-30 transition-colors"><ChevronRight size={16} /></button>
+
+        {!isLoading && totalPages > 1 && (
+          <div className="flex items-center justify-between px-4 py-3" style={{ borderTop: '2px solid var(--ink)' }}>
+            <span className="font-mono-brut text-xs text-gray-500">Pág. {page + 1} / {totalPages}</span>
+            <div className="flex gap-2">
+              <button onClick={() => setPage((p) => Math.max(0, p - 1))} disabled={page === 0} className="btn btn-ghost btn-sm"><ChevronLeft size={14} /></button>
+              <button onClick={() => setPage((p) => Math.min(totalPages - 1, p + 1))} disabled={page >= totalPages - 1} className="btn btn-ghost btn-sm"><ChevronRight size={14} /></button>
             </div>
           </div>
         )}
       </div>
 
-      <Modal open={modalOpen} title={editTarget ? 'Editar exposición' : 'Nueva exposición'} onClose={closeModal}>
+      <Modal open={modalOpen} title={editTarget ? 'Editar exposición' : 'Nueva exposición'} onClose={closeModal} size="lg">
         <ExposicionForm initial={editTarget} onSubmit={handleSubmit}
           loading={crear.isPending || actualizar.isPending} onCancel={closeModal} />
       </Modal>
@@ -149,7 +135,7 @@ export default function ExposicionesPage() {
       <ConfirmDialog
         open={!!deleteTarget}
         title="Eliminar exposición"
-        message={`¿Eliminar "${deleteTarget?.titulo}"? Esta acción no se puede deshacer.`}
+        message={`¿Eliminar "${deleteTarget?.titulo}"? No se puede deshacer.`}
         loading={eliminar.isPending}
         onConfirm={async () => { await eliminar.mutateAsync(deleteTarget!.id_exposicion); setDeleteTarget(null) }}
         onCancel={() => setDeleteTarget(null)}

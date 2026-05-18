@@ -1,20 +1,251 @@
+@import url('https://fonts.googleapis.com/css2?family=Space+Mono:ital,wght@0,400;0,700;1,400&family=Barlow+Condensed:wght@400;600;700;800;900&family=Barlow:wght@400;500;600&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
+:root {
+  --ink:     #0a0a0a;
+  --paper:   #f5f0e8;
+  --acid:    #d4f000;
+  --red:     #ff2d2d;
+  --stroke:  2px;
+  --stroke-heavy: 3px;
+  --shadow:  4px 4px 0 var(--ink);
+  --shadow-lg: 6px 6px 0 var(--ink);
+}
+
 @layer base {
-  * {
-    box-sizing: border-box;
-  }
+  *, *::before, *::after { box-sizing: border-box; }
+
+  html { scroll-behavior: smooth; }
 
   body {
-    @apply bg-gray-50 text-gray-900 antialiased;
-    font-family: 'Inter', system-ui, sans-serif;
+    background-color: var(--paper);
+    color: var(--ink);
+    font-family: 'Barlow', sans-serif;
+    font-size: 15px;
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+    cursor: default;
+  }
+
+  h1, h2, h3, h4 {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-weight: 900;
+    text-transform: uppercase;
+    letter-spacing: -0.02em;
+    line-height: 1;
+  }
+
+  code, pre, .mono {
+    font-family: 'Space Mono', monospace;
+  }
+
+  ::selection {
+    background: var(--acid);
+    color: var(--ink);
+  }
+
+  /* Scrollbar */
+  ::-webkit-scrollbar { width: 8px; height: 8px; }
+  ::-webkit-scrollbar-track { background: var(--paper); }
+  ::-webkit-scrollbar-thumb { background: var(--ink); }
+  ::-webkit-scrollbar-thumb:hover { background: #333; }
+}
+
+@layer components {
+
+  /* ── Botones ────────────────────────────────────── */
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 18px;
+    font-family: 'Barlow Condensed', sans-serif;
+    font-weight: 700;
+    font-size: 14px;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    border: var(--stroke-heavy) solid var(--ink);
+    background: var(--ink);
+    color: var(--paper);
+    box-shadow: var(--shadow);
+    transition: transform 80ms ease, box-shadow 80ms ease;
+    cursor: pointer;
+    white-space: nowrap;
+    user-select: none;
+  }
+  .btn:hover { transform: translate(-2px, -2px); box-shadow: var(--shadow-lg); }
+  .btn:active { transform: translate(2px, 2px); box-shadow: none; }
+  .btn:disabled { opacity: 0.4; pointer-events: none; }
+
+  .btn-ghost {
+    background: transparent;
+    color: var(--ink);
+  }
+  .btn-ghost:hover { background: var(--ink); color: var(--paper); }
+
+  .btn-acid {
+    background: var(--acid);
+    color: var(--ink);
+    border-color: var(--ink);
+  }
+
+  .btn-danger {
+    background: var(--red);
+    color: #fff;
+    border-color: var(--ink);
+  }
+
+  .btn-sm {
+    padding: 4px 10px;
+    font-size: 12px;
+  }
+
+  /* ── Inputs ─────────────────────────────────────── */
+  .field {
+    width: 100%;
+    padding: 9px 12px;
+    border: var(--stroke-heavy) solid var(--ink);
+    background: #fff;
+    color: var(--ink);
+    font-family: 'Barlow', sans-serif;
+    font-size: 14px;
+    outline: none;
+    box-shadow: var(--shadow);
+    transition: box-shadow 80ms ease, transform 80ms ease;
+  }
+  .field:focus {
+    box-shadow: var(--shadow-lg);
+    transform: translate(-1px, -1px);
+  }
+  .field::placeholder { color: #999; font-style: italic; }
+
+  .field-label {
+    display: block;
+    font-family: 'Space Mono', monospace;
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: #555;
+    margin-bottom: 5px;
+  }
+
+  .field-error {
+    margin-top: 4px;
+    font-family: 'Space Mono', monospace;
+    font-size: 11px;
+    color: var(--red);
+  }
+
+  /* ── Cards / panels ──────────────────────────────── */
+  .panel {
+    border: var(--stroke-heavy) solid var(--ink);
+    background: #fff;
+    box-shadow: var(--shadow-lg);
+  }
+
+  .panel-acid {
+    border: var(--stroke-heavy) solid var(--ink);
+    background: var(--acid);
+    box-shadow: var(--shadow-lg);
+  }
+
+  /* ── Table ───────────────────────────────────────── */
+  .brut-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13.5px;
+  }
+  .brut-table thead tr {
+    background: var(--ink);
+    color: var(--paper);
+  }
+  .brut-table thead th {
+    padding: 10px 14px;
+    text-align: left;
+    font-family: 'Space Mono', monospace;
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    white-space: nowrap;
+  }
+  .brut-table tbody tr {
+    border-bottom: 2px solid var(--ink);
+    transition: background 60ms;
+  }
+  .brut-table tbody tr:hover { background: var(--acid); }
+  .brut-table tbody td {
+    padding: 10px 14px;
+    color: var(--ink);
+    vertical-align: middle;
+  }
+  .brut-table tbody tr:last-child { border-bottom: none; }
+
+  /* ── Badges ──────────────────────────────────────── */
+  .badge {
+    display: inline-block;
+    padding: 2px 8px;
+    border: 2px solid var(--ink);
+    font-family: 'Space Mono', monospace;
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+
+  /* ── Section label ───────────────────────────────── */
+  .section-label {
+    font-family: 'Space Mono', monospace;
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    color: #777;
+    margin-bottom: 8px;
+  }
+
+  /* ── Modal overlay ───────────────────────────────── */
+  .modal-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 50;
+    background: rgba(10,10,10,0.7);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 16px;
+  }
+
+  /* ── Divider ─────────────────────────────────────── */
+  .brut-divider {
+    border: none;
+    border-top: 2px solid var(--ink);
+    margin: 0;
+  }
+
+  /* ── Slider accent ───────────────────────────────── */
+  input[type="range"] {
+    accent-color: var(--ink);
+    height: 4px;
+    cursor: pointer;
+  }
+
+  /* ── Stat number ─────────────────────────────────── */
+  .stat-num {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-weight: 900;
+    font-size: 52px;
+    line-height: 1;
+    letter-spacing: -0.03em;
   }
 }
 
 @layer utilities {
-  .scrollbar-thin {
-    scrollbar-width: thin;
-  }
+  .scrollbar-thin { scrollbar-width: thin; }
+  .font-display { font-family: 'Barlow Condensed', sans-serif; }
+  .font-mono-brut { font-family: 'Space Mono', monospace; }
 }

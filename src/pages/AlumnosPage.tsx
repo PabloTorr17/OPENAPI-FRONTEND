@@ -5,14 +5,18 @@ import AlumnoForm from '@/components/alumnos/AlumnoForm'
 import Modal from '@/components/ui/Modal'
 import ConfirmDialog from '@/components/ui/ConfirmDialog'
 import EmptyState from '@/components/ui/EmptyState'
+import { useAuthStore } from '@/store/authStore'
 import type { Alumno } from '@/types/alumnos.types'
 
 export default function AlumnosPage() {
+  const rol       = useAuthStore((s) => s.user?.rol)
+  const canWrite  = rol === 'admin' || rol === 'docente'
+
   const [search, setSearch]             = useState('')
   const [page, setPage]                 = useState(0)
   const [modalOpen, setModalOpen]       = useState(false)
-  const [editTarget, setEditTarget]     = useState<Alumno | null>(null)
-  const [deleteTarget, setDeleteTarget] = useState<Alumno | null>(null)
+  const [editTarget, setEditTarget]     = useState<Alumno|null>(null)
+  const [deleteTarget, setDeleteTarget] = useState<Alumno|null>(null)
   const PAGE_SIZE = 10
 
   const { data, isLoading, isError } = useAlumnos({ search, page, size: PAGE_SIZE })
@@ -25,10 +29,8 @@ export default function AlumnosPage() {
   const closeModal = () => { setModalOpen(false); setEditTarget(null) }
 
   const handleSubmit = async (values: any) => {
-    // Si es edición y password viene vacío, no lo enviamos
     const body = { ...values }
     if (editTarget && !body.password) delete body.password
-
     if (editTarget) await actualizar.mutateAsync({ id: editTarget.id_alumno, body })
     else await crear.mutateAsync(body)
     closeModal()
@@ -37,94 +39,100 @@ export default function AlumnosPage() {
   const totalPages = data?.totalPages ?? 1
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 max-w-5xl">
 
-      {/* Encabezado */}
-      <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-slate-800">Alumnos</h1>
-          <p className="text-sm text-slate-500">
-            {data ? `${data.totalElements} alumno(s) registrado(s)` : 'Cargando…'}
+          <h1 className="font-display text-5xl font-black uppercase tracking-tight leading-none">Alumnos</h1>
+          <p className="font-mono-brut text-xs text-gray-500 mt-1">
+            {data ? `${data.totalElements} registrados` : '—'}
           </p>
         </div>
-        <button onClick={openCreate}
-          className="flex items-center gap-2 rounded-xl bg-indigo-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-indigo-700 transition-colors shadow-sm"
-          aria-label="Registrar nuevo alumno">
-          <Plus size={16} /> Nuevo alumno
-        </button>
+        {canWrite && (
+          <button onClick={openCreate} className="btn btn-acid">
+            <Plus size={14} strokeWidth={2.5} /> Nuevo alumno
+          </button>
+        )}
       </div>
 
-      {/* Búsqueda */}
+      {/* Search */}
       <div className="relative max-w-sm">
-        <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
-        <input type="search" value={search}
+        <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" strokeWidth={2.5} />
+        <input
+          type="search" value={search}
           onChange={(e) => { setSearch(e.target.value); setPage(0) }}
-          placeholder="Buscar por nombre o matrícula…"
-          aria-label="Buscar alumnos"
-          className="w-full rounded-xl border border-slate-200 bg-white py-2 pl-9 pr-4 text-sm outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 transition-all" />
+          placeholder="Buscar nombre o matrícula…"
+          className="field pl-9"
+        />
       </div>
 
-      {/* Tabla */}
-      <div className="rounded-2xl border border-slate-200 bg-white overflow-hidden shadow-sm">
-
+      {/* Table */}
+      <div className="panel overflow-hidden">
         {isLoading && (
-          <div className="flex items-center justify-center py-20 gap-2 text-slate-400">
-            <Loader2 size={20} className="animate-spin" />
-            <span className="text-sm">Cargando alumnos…</span>
+          <div className="flex items-center justify-center py-20 gap-2 text-gray-400">
+            <Loader2 size={18} className="animate-spin" />
+            <span className="font-mono-brut text-sm">Cargando…</span>
           </div>
         )}
 
         {isError && !isLoading && (
           <div className="py-16 text-center">
-            <p className="text-sm font-semibold text-red-500">Error al cargar los datos</p>
-            <p className="text-xs text-slate-400 mt-1">Verifica tu conexión o recarga la página</p>
+            <p className="font-display text-2xl font-black uppercase text-red-500">Error al cargar</p>
+            <p className="font-mono-brut text-xs text-gray-400 mt-1">Verifica tu conexión</p>
           </div>
         )}
 
         {!isLoading && !isError && data?.content.length === 0 && (
           <EmptyState
             title="Sin alumnos"
-            description={search ? `No hay resultados para "${search}"` : 'Registra el primer alumno.'}
-            action={search
-              ? <button onClick={() => setSearch('')} className="text-sm text-indigo-600 underline underline-offset-2">Limpiar búsqueda</button>
-              : undefined}
+            description={search ? `Sin resultados para "${search}"` : 'Registra el primer alumno.'}
+            action={search ? (
+              <button onClick={() => setSearch('')} className="btn btn-ghost btn-sm">Limpiar búsqueda</button>
+            ) : undefined}
           />
         )}
 
         {!isLoading && !isError && (data?.content.length ?? 0) > 0 && (
           <div className="overflow-x-auto">
-            <table className="w-full text-sm" aria-label="Tabla de alumnos">
+            <table className="brut-table">
               <thead>
-                <tr className="border-b border-slate-100 bg-slate-50 text-left">
-                  {['Matrícula', 'Nombre', 'Correo', 'Grupo', 'Acciones'].map((h) => (
-                    <th key={h} className="px-4 py-3 text-xs font-semibold uppercase tracking-wide text-slate-500">{h}</th>
-                  ))}
+                <tr>
+                  <th>Matrícula</th>
+                  <th>Nombre</th>
+                  <th>Correo</th>
+                  <th>Grupo</th>
+                  {canWrite && <th style={{ textAlign: 'right' }}>Acciones</th>}
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-100">
+              <tbody>
                 {data!.content.map((a) => (
-                  <tr key={a.id_alumno} className="group hover:bg-indigo-50/40 transition-colors">
-                    <td className="px-4 py-3 font-mono text-xs text-slate-600">{a.matricula}</td>
-                    {/* ✅ apellido_pat + apellido_mat */}
-                    <td className="px-4 py-3 font-medium text-slate-800">
+                  <tr key={a.id_alumno}>
+                    <td>
+                      <span className="font-mono-brut text-xs bg-gray-100 px-2 py-0.5">{a.matricula}</span>
+                    </td>
+                    <td className="font-bold">
                       {a.nombre} {a.apellido_pat} {a.apellido_mat ?? ''}
                     </td>
-                    <td className="px-4 py-3 text-slate-500">{a.email}</td>
-                    <td className="px-4 py-3 text-slate-500">
-                      {a.nombre_grupo ?? <span className="text-slate-300 italic">Sin grupo</span>}
+                    <td className="text-gray-500 text-xs">{a.email}</td>
+                    <td>
+                      {a.nombre_grupo
+                        ? <span className="badge">{a.nombre_grupo}</span>
+                        : <span className="font-mono-brut text-xs text-gray-300">—</span>
+                      }
                     </td>
-                    <td className="px-4 py-3">
-                      <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                        <button onClick={() => openEdit(a)} aria-label={`Editar ${a.nombre}`}
-                          className="rounded-lg p-1.5 text-slate-400 hover:bg-indigo-100 hover:text-indigo-600 transition-colors">
-                          <Pencil size={14} />
-                        </button>
-                        <button onClick={() => setDeleteTarget(a)} aria-label={`Eliminar ${a.nombre}`}
-                          className="rounded-lg p-1.5 text-slate-400 hover:bg-red-100 hover:text-red-600 transition-colors">
-                          <Trash2 size={14} />
-                        </button>
-                      </div>
-                    </td>
+                    {canWrite && (
+                      <td>
+                        <div className="flex items-center justify-end gap-1">
+                          <button onClick={() => openEdit(a)} className="btn btn-ghost btn-sm" aria-label="Editar">
+                            <Pencil size={12} strokeWidth={2.5} />
+                          </button>
+                          <button onClick={() => setDeleteTarget(a)} className="btn btn-danger btn-sm" aria-label="Eliminar">
+                            <Trash2 size={12} strokeWidth={2.5} />
+                          </button>
+                        </div>
+                      </td>
+                    )}
                   </tr>
                 ))}
               </tbody>
@@ -132,40 +140,45 @@ export default function AlumnosPage() {
           </div>
         )}
 
-        {!isLoading && (data?.totalPages ?? 0) > 1 && (
-          <div className="flex items-center justify-between border-t border-slate-100 px-4 py-3">
-            <p className="text-xs text-slate-500">Página {page + 1} de {totalPages}</p>
-            <div className="flex gap-1">
-              <button onClick={() => setPage((p) => Math.max(0, p - 1))} disabled={page === 0}
-                aria-label="Página anterior"
-                className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 disabled:opacity-30 transition-colors">
-                <ChevronLeft size={16} />
+        {!isLoading && totalPages > 1 && (
+          <div className="flex items-center justify-between px-4 py-3" style={{ borderTop: '2px solid var(--ink)' }}>
+            <span className="font-mono-brut text-xs text-gray-500">Pág. {page + 1} / {totalPages}</span>
+            <div className="flex gap-2">
+              <button onClick={() => setPage((p) => Math.max(0, p - 1))} disabled={page === 0} className="btn btn-ghost btn-sm">
+                <ChevronLeft size={14} />
               </button>
-              <button onClick={() => setPage((p) => Math.min(totalPages - 1, p + 1))} disabled={page >= totalPages - 1}
-                aria-label="Página siguiente"
-                className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 disabled:opacity-30 transition-colors">
-                <ChevronRight size={16} />
+              <button onClick={() => setPage((p) => Math.min(totalPages - 1, p + 1))} disabled={page >= totalPages - 1} className="btn btn-ghost btn-sm">
+                <ChevronRight size={14} />
               </button>
             </div>
           </div>
         )}
       </div>
 
-      {/* Modal crear/editar */}
-      <Modal open={modalOpen} title={editTarget ? 'Editar alumno' : 'Registrar alumno'} onClose={closeModal}>
-        <AlumnoForm initial={editTarget} onSubmit={handleSubmit}
-          loading={crear.isPending || actualizar.isPending} onCancel={closeModal} />
-      </Modal>
+      {canWrite && (
+        <>
+          <Modal open={modalOpen} title={editTarget ? 'Editar alumno' : 'Registrar alumno'} onClose={closeModal} size="md">
+            <AlumnoForm
+              initial={editTarget}
+              onSubmit={handleSubmit}
+              loading={crear.isPending || actualizar.isPending}
+              onCancel={closeModal}
+            />
+          </Modal>
 
-      {/* Confirm eliminar */}
-      <ConfirmDialog
-        open={!!deleteTarget}
-        title="Eliminar alumno"
-        message={`¿Eliminar a ${deleteTarget?.nombre} ${deleteTarget?.apellido_pat}? Esta acción no se puede deshacer.`}
-        loading={eliminar.isPending}
-        onConfirm={async () => { await eliminar.mutateAsync(deleteTarget!.id_alumno); setDeleteTarget(null) }}
-        onCancel={() => setDeleteTarget(null)}
-      />
+          <ConfirmDialog
+            open={!!deleteTarget}
+            title="Eliminar alumno"
+            message={`¿Eliminar a ${deleteTarget?.nombre} ${deleteTarget?.apellido_pat}? Esta acción no se puede deshacer.`}
+            loading={eliminar.isPending}
+            onConfirm={async () => {
+              await eliminar.mutateAsync(deleteTarget!.id_alumno)
+              setDeleteTarget(null)
+            }}
+            onCancel={() => setDeleteTarget(null)}
+          />
+        </>
+      )}
     </div>
   )
 }

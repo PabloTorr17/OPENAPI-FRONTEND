@@ -1,227 +1,135 @@
 import { useState } from 'react'
 import { Plus, Loader2, Users, Pencil, Trash2 } from 'lucide-react'
-import { useForm } from 'react-hook-form'
-import { zodResolver } from '@hookform/resolvers/zod'
-import { z } from 'zod'
-import { useAuthStore } from '@/store/authStore'
 import { useEquipos, useCrearEquipo, useActualizarEquipo, useEliminarEquipo } from '@/hooks/useEquipos'
 import { useGrupos } from '@/hooks/useGrupos'
+import { useAuthStore } from '@/store/authStore'
 import Modal from '@/components/ui/Modal'
 import ConfirmDialog from '@/components/ui/ConfirmDialog'
+import EquipoForm from '@/components/equipos/EquipoForm'
 import type { Equipo } from '@/types/equipos.types'
 
-const schema = z.object({
-  nombre_equipo: z.string().min(2, 'Mínimo 2 caracteres').max(80),
-  id_grupo: z.number({ coerce: true }).positive('Selecciona un grupo'),
-})
-type FormValues = z.infer<typeof schema>
-
-// ─── Formulario ───────────────────────────────────────────────────────────────
-function EquipoForm({
-  initial,
-  grupos,
-  gruposLoading,
-  onSubmit,
-  loading,
-  onCancel,
-}: {
-  initial?: Equipo | null
-  grupos: { id_grupo: number; nombre_grupo: string; nombre_materia: string; semestre: string }[]
-  gruposLoading: boolean
-  onSubmit: (v: FormValues) => void
-  loading?: boolean
-  onCancel: () => void
-}) {
-  const { register, handleSubmit, formState: { errors } } = useForm<FormValues>({
-    resolver: zodResolver(schema),
-    defaultValues: {
-      nombre_equipo: initial?.nombre_equipo ?? '',
-      id_grupo:      initial?.id_grupo      ?? (undefined as any),
-    },
-  })
-
-  const cls = 'w-full rounded-lg border border-slate-200 px-3 py-2 text-sm outline-none focus:border-teal-500 focus:ring-2 focus:ring-teal-100 transition-all'
-  const lbl = 'mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500'
-
-  return (
-    <form onSubmit={handleSubmit(onSubmit)} noValidate className="space-y-4">
-      {/* Nombre */}
-      <div>
-        <label className={lbl} htmlFor="eq_nombre">Nombre del equipo *</label>
-        <input id="eq_nombre" {...register('nombre_equipo')} className={cls}
-          aria-invalid={!!errors.nombre_equipo} placeholder="Ej. Equipo Alpha" />
-        {errors.nombre_equipo && (
-          <p className="mt-1 text-xs text-red-500">{errors.nombre_equipo.message}</p>
-        )}
-      </div>
-
-      {/* Grupo */}
-      <div>
-        <label className={lbl} htmlFor="eq_grupo">Grupo *</label>
-        {gruposLoading ? (
-          <div className="flex items-center gap-2 rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-400">
-            <Loader2 size={14} className="animate-spin" /> Cargando grupos…
-          </div>
-        ) : (
-          <select id="eq_grupo" {...register('id_grupo')} className={`${cls} bg-white`}
-            aria-invalid={!!errors.id_grupo}>
-            <option value="">Selecciona un grupo</option>
-            {grupos.map((g) => (
-              <option key={g.id_grupo} value={g.id_grupo}>
-                {g.nombre_grupo} — {g.nombre_materia} ({g.semestre})
-              </option>
-            ))}
-          </select>
-        )}
-        {errors.id_grupo && (
-          <p className="mt-1 text-xs text-red-500">{errors.id_grupo.message}</p>
-        )}
-      </div>
-
-      {/* Botones */}
-      <div className="flex justify-end gap-3 pt-2">
-        <button type="button" onClick={onCancel}
-          className="rounded-lg px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-100 transition-colors">
-          Cancelar
-        </button>
-        <button type="submit" disabled={loading || gruposLoading}
-          className="rounded-lg bg-teal-600 px-5 py-2 text-sm font-semibold text-white hover:bg-teal-700 disabled:opacity-50 transition-colors">
-          {loading ? 'Guardando…' : initial ? 'Actualizar' : 'Crear equipo'}
-        </button>
-      </div>
-    </form>
-  )
-}
-
-// ─── Página ───────────────────────────────────────────────────────────────────
 export default function EquiposPage() {
-  const user = useAuthStore((s) => s.user)
-  const rol  = user?.rol ?? 'alumno'
+  const user      = useAuthStore((s) => s.user)
+  const rol       = user?.rol ?? 'alumno'
   const canWrite  = rol === 'admin' || rol === 'docente'
   const canDelete = rol === 'admin'
 
-  const [modalOpen, setModalOpen]         = useState(false)
-  const [editTarget, setEditTarget]       = useState<Equipo | null>(null)
-  const [deleteTarget, setDeleteTarget]   = useState<Equipo | null>(null)
-  const [idGrupoFiltro, setIdGrupoFiltro] = useState<number | undefined>()
+  const [modalOpen, setModalOpen]       = useState(false)
+  const [editTarget, setEditTarget]     = useState<Equipo|null>(null)
+  const [deleteTarget, setDeleteTarget] = useState<Equipo|null>(null)
+  const [idGrupoFiltro, setIdGrupoFiltro] = useState<number|undefined>()
 
-  const { data: equipos = [], isLoading, isError } = useEquipos(
-    idGrupoFiltro ? { id_grupo: idGrupoFiltro } : undefined
-  )
+  const { data: equipos = [], isLoading, isError } = useEquipos(idGrupoFiltro ? { id_grupo: idGrupoFiltro } : undefined)
+  const { data: gruposData, isLoading: gruposLoading } = useGrupos(0, 100, '')
+  const grupos = gruposData?.content ?? []
+
   const crear      = useCrearEquipo()
   const actualizar = useActualizarEquipo()
   const eliminar   = useEliminarEquipo()
 
-  // ✅ FIX: cargar todos los grupos para los selects, respetando el límite del backend.
-  const { data: gruposData, isLoading: gruposLoading } = useGrupos(0, 100, '')
-  const grupos = gruposData?.content ?? []
-
-  const openCreate = () => { setEditTarget(null);  setModalOpen(true) }
+  const openCreate = () => { setEditTarget(null); setModalOpen(true) }
   const openEdit   = (eq: Equipo) => { setEditTarget(eq); setModalOpen(true) }
-  const closeModal = () => { setModalOpen(false);  setEditTarget(null) }
+  const closeModal = () => { setModalOpen(false); setEditTarget(null) }
 
-  const handleSubmit = async (values: FormValues) => {
+  const handleSubmit = async (values: any) => {
     if (editTarget) {
-      await actualizar.mutateAsync({ id: editTarget.id_equipo, body: values })
+      await actualizar.mutateAsync({ id: editTarget.id_equipo, body: { nombre_equipo: values.nombre_equipo, id_grupo: values.id_grupo } })
     } else {
-      await crear.mutateAsync({
-        nombre_equipo:     values.nombre_equipo,
-        id_grupo:          values.id_grupo,
-        id_alumno_creador: user?.id ?? 1,
-      })
+      await crear.mutateAsync({ ...values, id_alumno_creador: user?.id ?? 1 })
     }
     closeModal()
   }
 
   return (
-    <div className="space-y-6">
-      {/* Encabezado */}
-      <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
+    <div className="space-y-6 max-w-4xl">
+
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-slate-800">Equipos</h1>
-          <p className="text-sm text-slate-500">
-            {isLoading ? 'Cargando…' : `${equipos.length} equipo(s)`}
+          <h1 className="font-display text-5xl font-black uppercase tracking-tight leading-none">Equipos</h1>
+          <p className="font-mono-brut text-xs text-gray-500 mt-1">
+            {isLoading ? '—' : `${equipos.length} equipo(s)`}
           </p>
         </div>
         {canWrite && (
-          <button onClick={openCreate}
-            className="flex items-center gap-2 rounded-xl bg-teal-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-teal-700 transition-colors shadow-sm">
-            <Plus size={16} /> Nuevo equipo
+          <button onClick={openCreate} className="btn btn-acid">
+            <Plus size={14} strokeWidth={2.5} /> Nuevo equipo
           </button>
         )}
       </div>
 
-      {/* Filtro por grupo */}
+      {/* Filtro grupo */}
       <div className="max-w-xs">
-        <select value={idGrupoFiltro ?? ''}
+        <label className="field-label">Filtrar por grupo</label>
+        <select
+          value={idGrupoFiltro ?? ''}
           onChange={(e) => setIdGrupoFiltro(e.target.value ? Number(e.target.value) : undefined)}
-          aria-label="Filtrar equipos por grupo"
-          className="w-full rounded-xl border border-slate-200 bg-white py-2 px-3 text-sm outline-none focus:border-teal-400 focus:ring-2 focus:ring-teal-100 transition-all">
+          className="field bg-white"
+        >
           <option value="">Todos los grupos</option>
           {grupos.map((g) => (
-            <option key={g.id_grupo} value={g.id_grupo}>
-              {g.nombre_grupo} — {g.nombre_materia} ({g.semestre})
-            </option>
+            <option key={g.id_grupo} value={g.id_grupo}>{g.nombre_grupo} — {g.nombre_materia}</option>
           ))}
         </select>
       </div>
 
-      {/* Tabla */}
-      <div className="rounded-2xl border border-slate-200 bg-white overflow-hidden shadow-sm">
+      {/* Table */}
+      <div className="panel overflow-hidden">
         {isLoading && (
-          <div className="flex items-center justify-center py-20 gap-2 text-slate-400">
-            <Loader2 size={20} className="animate-spin" />
-            <span className="text-sm">Cargando equipos…</span>
+          <div className="flex items-center justify-center py-20 gap-2 text-gray-400">
+            <Loader2 size={18} className="animate-spin" />
+            <span className="font-mono-brut text-sm">Cargando…</span>
           </div>
         )}
+
         {isError && !isLoading && (
           <div className="py-16 text-center">
-            <p className="text-sm font-semibold text-red-500">Error al cargar los datos</p>
+            <p className="font-display text-2xl font-black uppercase text-red-500">Error al cargar</p>
           </div>
         )}
+
         {!isLoading && !isError && equipos.length === 0 && (
-          <div className="flex flex-col items-center justify-center py-16 text-center">
-            <div className="mb-4 h-14 w-14 rounded-full bg-teal-50 flex items-center justify-center">
-              <Users size={24} className="text-teal-400" />
+          <div className="flex flex-col items-center justify-center py-16">
+            <div className="w-16 h-16 flex items-center justify-center mb-4 text-gray-200" style={{ border: '3px solid #e5e5e5' }}>
+              <Users size={28} strokeWidth={1.5} />
             </div>
-            <p className="text-sm font-semibold text-slate-700">Sin equipos</p>
-            <p className="text-xs text-slate-400 mt-1">
+            <p className="font-display text-2xl font-black uppercase text-gray-400">Sin equipos</p>
+            <p className="font-mono-brut text-xs text-gray-400 mt-1">
               {idGrupoFiltro ? 'No hay equipos en ese grupo.' : 'Crea el primer equipo.'}
             </p>
           </div>
         )}
+
         {!isLoading && !isError && equipos.length > 0 && (
           <div className="overflow-x-auto">
-            <table className="w-full text-sm" aria-label="Tabla de equipos">
+            <table className="brut-table">
               <thead>
-                <tr className="border-b border-slate-100 bg-slate-50 text-left">
-                  {[
-                    'Nombre del equipo', 'Grupo', 'Integrantes',
-                    ...(canWrite || canDelete ? ['Acciones'] : [])
-                  ].map((h) => (
-                    <th key={h} className="px-4 py-3 text-xs font-semibold uppercase tracking-wide text-slate-500">{h}</th>
-                  ))}
+                <tr>
+                  <th>Nombre del equipo</th>
+                  <th>Grupo</th>
+                  <th>Integrantes</th>
+                  {(canWrite || canDelete) && <th style={{ textAlign: 'right' }}>Acciones</th>}
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-100">
+              <tbody>
                 {equipos.map((eq) => (
-                  <tr key={eq.id_equipo} className="group hover:bg-teal-50/40 transition-colors">
-                    <td className="px-4 py-3 font-medium text-slate-800">{eq.nombre_equipo}</td>
-                    <td className="px-4 py-3 text-slate-500">{eq.nombre_grupo ?? `Grupo ${eq.id_grupo}`}</td>
-                    <td className="px-4 py-3 text-slate-500">{eq.total_integrantes ?? '—'}</td>
+                  <tr key={eq.id_equipo}>
+                    <td className="font-bold">{eq.nombre_equipo}</td>
+                    <td className="text-gray-500 text-xs">{eq.nombre_grupo ?? `Grupo ${eq.id_grupo}`}</td>
+                    <td>
+                      <span className="font-mono-brut text-xs">{eq.total_integrantes ?? '—'}</span>
+                    </td>
                     {(canWrite || canDelete) && (
-                      <td className="px-4 py-3">
-                        <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <td>
+                        <div className="flex items-center justify-end gap-1">
                           {canWrite && (
-                            <button onClick={() => openEdit(eq)} aria-label={`Editar ${eq.nombre_equipo}`}
-                              className="rounded-lg p-1.5 text-slate-400 hover:bg-teal-100 hover:text-teal-600 transition-colors">
-                              <Pencil size={14} />
+                            <button onClick={() => openEdit(eq)} className="btn btn-ghost btn-sm">
+                              <Pencil size={12} strokeWidth={2.5} />
                             </button>
                           )}
                           {canDelete && (
-                            <button onClick={() => setDeleteTarget(eq)} aria-label={`Eliminar ${eq.nombre_equipo}`}
-                              className="rounded-lg p-1.5 text-slate-400 hover:bg-red-100 hover:text-red-600 transition-colors">
-                              <Trash2 size={14} />
+                            <button onClick={() => setDeleteTarget(eq)} className="btn btn-danger btn-sm">
+                              <Trash2 size={12} strokeWidth={2.5} />
                             </button>
                           )}
                         </div>
@@ -235,28 +143,30 @@ export default function EquiposPage() {
         )}
       </div>
 
-      {/* Modal — key fuerza re-montaje al cambiar el equipo editado,
-          garantizando que defaultValues del useForm tomen el valor correcto */}
-      <Modal open={modalOpen} title={editTarget ? 'Editar equipo' : 'Nuevo equipo'} onClose={closeModal}>
-        <EquipoForm
-          key={editTarget?.id_equipo ?? 'new'}
-          initial={editTarget}
-          grupos={grupos}
-          gruposLoading={gruposLoading}
-          onSubmit={handleSubmit}
-          loading={crear.isPending || actualizar.isPending}
-          onCancel={closeModal}
-        />
-      </Modal>
+      {(canWrite || canDelete) && (
+        <>
+          <Modal open={modalOpen} title={editTarget ? 'Editar equipo' : 'Nuevo equipo'} onClose={closeModal}>
+            <EquipoForm
+              key={editTarget?.id_equipo ?? 'new'}
+              initial={editTarget}
+              grupos={grupos}
+              gruposLoading={gruposLoading}
+              onSubmit={handleSubmit}
+              loading={crear.isPending || actualizar.isPending}
+              onCancel={closeModal}
+            />
+          </Modal>
 
-      <ConfirmDialog
-        open={!!deleteTarget}
-        title="Eliminar equipo"
-        message={`¿Eliminar el equipo "${deleteTarget?.nombre_equipo}"? Esta acción no se puede deshacer.`}
-        loading={eliminar.isPending}
-        onConfirm={async () => { await eliminar.mutateAsync(deleteTarget!.id_equipo); setDeleteTarget(null) }}
-        onCancel={() => setDeleteTarget(null)}
-      />
+          <ConfirmDialog
+            open={!!deleteTarget}
+            title="Eliminar equipo"
+            message={`¿Eliminar el equipo "${deleteTarget?.nombre_equipo}"? Esta acción no se puede deshacer.`}
+            loading={eliminar.isPending}
+            onConfirm={async () => { await eliminar.mutateAsync(deleteTarget!.id_equipo); setDeleteTarget(null) }}
+            onCancel={() => setDeleteTarget(null)}
+          />
+        </>
+      )}
     </div>
   )
 }

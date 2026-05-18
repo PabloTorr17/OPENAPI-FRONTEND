@@ -7,17 +7,28 @@ export default {
   theme: {
     extend: {
       colors: {
+        ink:   '#0a0a0a',
+        paper: '#f5f0e8',
+        acid:  '#d4f000',
+        danger:'#ff2d2d',
         primary: {
-          50:  '#eff6ff',
-          100: '#dbeafe',
-          500: '#3b82f6',
-          600: '#2563eb',
-          700: '#1d4ed8',
-          900: '#1e3a8a',
+          50:  '#f5f0e8',
+          100: '#e8e0cf',
+          500: '#0a0a0a',
+          600: '#0a0a0a',
+          700: '#1a1a1a',
+          900: '#000000',
         },
       },
       fontFamily: {
-        sans: ['Inter', 'system-ui', 'sans-serif'],
+        display: ['"Barlow Condensed"', 'sans-serif'],
+        body:    ['Barlow', 'sans-serif'],
+        mono:    ['"Space Mono"', 'monospace'],
+        sans:    ['Barlow', 'sans-serif'],
+      },
+      boxShadow: {
+        brut:    '4px 4px 0 #0a0a0a',
+        'brut-lg':'6px 6px 0 #0a0a0a',
       },
     },
   },

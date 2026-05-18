@@ -9,7 +9,7 @@ interface ModalProps {
   size?: 'sm' | 'md' | 'lg'
 }
 
-const sizes = { sm: 'max-w-sm', md: 'max-w-lg', lg: 'max-w-2xl' }
+const maxWidths = { sm: '380px', md: '520px', lg: '720px' }
 
 export default function Modal({ open, title, onClose, children, size = 'md' }: ModalProps) {
   useEffect(() => {
@@ -22,25 +22,44 @@ export default function Modal({ open, title, onClose, children, size = 'md' }: M
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm px-4"
+      className="modal-overlay"
       role="dialog"
       aria-modal="true"
       aria-labelledby="modal-title"
       onClick={(e) => e.target === e.currentTarget && onClose()}
     >
-      <div className={`w-full ${sizes[size]} rounded-2xl bg-white shadow-xl`}>
-        <div className="flex items-center justify-between border-b border-slate-100 px-6 py-4">
-          <h2 id="modal-title" className="text-base font-bold text-slate-800">{title}</h2>
+      <div
+        className="panel w-full"
+        style={{ maxWidth: maxWidths[size], animation: 'modalIn 120ms ease-out' }}
+      >
+        {/* Header */}
+        <div
+          className="flex items-center justify-between px-5 py-4 bg-[var(--ink)]"
+        >
+          <h2
+            id="modal-title"
+            className="font-display text-xl font-black uppercase tracking-tight text-[var(--paper)]"
+          >
+            {title}
+          </h2>
           <button
             onClick={onClose}
             aria-label="Cerrar modal"
-            className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-600 transition-colors"
+            className="text-gray-400 hover:text-white transition-colors p-1"
           >
-            <X size={18} />
+            <X size={18} strokeWidth={2.5} />
           </button>
         </div>
-        <div className="px-6 py-5">{children}</div>
+
+        <div className="p-5">{children}</div>
       </div>
+
+      <style>{`
+        @keyframes modalIn {
+          from { opacity: 0; transform: translate(4px, 8px); }
+          to   { opacity: 1; transform: translate(0, 0); }
+        }
+      `}</style>
     </div>
   )
 }
