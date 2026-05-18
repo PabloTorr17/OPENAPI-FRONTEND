@@ -1,4 +1,4 @@
-import { useMutation, useQueryClient } from '@tanstack/react-query'
+import { useQuery, useMutation } from '@tanstack/react-query'
 import toast from 'react-hot-toast'
 import { evaluacionesService } from '@/services/evaluaciones.service'
 import type { EvaluacionInput } from '@/types/evaluaciones.types'
@@ -20,5 +20,12 @@ export function useRegistrarEvaluacion() {
         toast.error(message ?? 'Error al registrar la evaluación')
       }
     },
+  })
+}
+
+export function useEvaluaciones() {
+  return useQuery({
+    queryKey: [EVALUACIONES_KEY],
+    queryFn: () => evaluacionesService.listar(),
   })
 }

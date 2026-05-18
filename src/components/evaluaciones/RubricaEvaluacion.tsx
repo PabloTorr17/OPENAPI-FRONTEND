@@ -6,10 +6,7 @@ import { Loader2, Star } from 'lucide-react'
 import type { Criterio } from '@/types/evaluaciones.types'
 
 function buildSchema(criterios: Criterio[]) {
-  const shape: Record<string, z.ZodTypeAny> = {
-    id_exposicion:       z.number({ coerce: true }).positive('Requerido'),
-    id_alumno_evaluador: z.number({ coerce: true }).positive('Requerido'),
-  }
+  const shape: Record<string, z.ZodTypeAny> = {}
   criterios.forEach((c) => {
     shape[`criterio_${c.id_criterio}`] = z
       .number({ coerce: true, invalid_type_error: 'Ingresa un valor' })
@@ -52,20 +49,28 @@ interface RubricaEvaluacionProps {
   criteriosLoading: boolean
   onSubmit: (data: { id_exposicion: number; id_alumno_evaluador: number; detalles: { id_criterio: number; calificacion: number }[] }) => void
   loading?: boolean
-  onCancel: () => void
+  // ✅ FIX: prop para deshabilitar submit cuando faltan selecciones externas
+  disableSubmit?: boolean
 }
 
-export default function RubricaEvaluacion({ criterios, criteriosLoading, onSubmit, loading, onCancel }: RubricaEvaluacionProps) {
+export default function RubricaEvaluacion({ criterios, criteriosLoading, onSubmit, loading, disableSubmit }: RubricaEvaluacionProps) {
   const schema = buildSchema(criterios)
   type FormValues = z.infer<typeof schema>
 
-  const defaultValues: Record<string, number> = { id_exposicion: 0, id_alumno_evaluador: 0 }
+  const defaultValues: Record<string, number> = {}
   criterios.forEach((c) => { defaultValues[`criterio_${c.id_criterio}`] = 5.0 })
 
-  const { control, handleSubmit, watch, register, formState: { errors } } = useForm<FormValues>({
+  const { control, handleSubmit, watch, reset } = useForm<FormValues>({
     resolver: zodResolver(schema),
     defaultValues: defaultValues as any,
   })
+
+  // Reset cuando cambien los criterios
+  useEffect(() => {
+    const dv: Record<string, number> = {}
+    criterios.forEach((c) => { dv[`criterio_${c.id_criterio}`] = 5.0 })
+    reset(dv as any)
+  }, [criterios, reset])
 
   const values   = watch()
   const promedio = criterios.length > 0
@@ -73,35 +78,20 @@ export default function RubricaEvaluacion({ criterios, criteriosLoading, onSubmi
     : 0
 
   const promedioColor = promedio >= 8 ? 'text-emerald-600' : promedio >= 6 ? 'text-amber-500' : 'text-red-500'
-  const field = 'w-full rounded-lg border border-slate-200 px-3 py-2 text-sm outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 transition-all'
-  const lbl   = 'mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500'
 
   return (
     <form onSubmit={handleSubmit((data) => {
       onSubmit({
-        id_exposicion:       Number(data.id_exposicion),
-        id_alumno_evaluador: Number(data.id_alumno_evaluador),
+        id_exposicion:       0, // se sobreescribe desde el padre
+        id_alumno_evaluador: 0, // se sobreescribe desde el padre
         detalles: criterios.map((c) => ({ id_criterio: c.id_criterio, calificacion: Number(data[`criterio_${c.id_criterio}`]) })),
       })
     })} noValidate className="space-y-5">
 
-      <div className="grid grid-cols-2 gap-3">
-        <div>
-          <label className={lbl} htmlFor="id_exposicion">ID Exposición *</label>
-          <input id="id_exposicion" type="number" {...register('id_exposicion' as any)}
-            className={field} placeholder="Ej. 2" />
-          {(errors as any).id_exposicion && <p className="mt-1 text-xs text-red-500" role="alert">{(errors as any).id_exposicion?.message}</p>}
-        </div>
-        <div>
-          <label className={lbl} htmlFor="id_alumno_evaluador">ID Alumno evaluador *</label>
-          <input id="id_alumno_evaluador" type="number" {...register('id_alumno_evaluador' as any)}
-            className={field} placeholder="Tu ID" />
-          {(errors as any).id_alumno_evaluador && <p className="mt-1 text-xs text-red-500" role="alert">{(errors as any).id_alumno_evaluador?.message}</p>}
-        </div>
-      </div>
-
       <div>
-        <p className={lbl}>Criterios de evaluación</p>
+        <p className="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500">
+          Criterios de evaluación
+        </p>
         {criteriosLoading && (
           <div className="flex items-center gap-2 py-6 text-slate-400">
             <Loader2 size={16} className="animate-spin" /><span className="text-sm">Cargando criterios…</span>
@@ -110,7 +100,7 @@ export default function RubricaEvaluacion({ criterios, criteriosLoading, onSubmi
         {!criteriosLoading && criterios.length === 0 && (
           <div className="rounded-xl border border-dashed border-slate-200 py-8 text-center">
             <Star size={20} className="mx-auto text-slate-300 mb-2" />
-            <p className="text-sm text-slate-400">Ingresa el ID de exposición para cargar los criterios</p>
+            <p className="text-sm text-slate-400">Selecciona una exposición para cargar los criterios</p>
           </div>
         )}
         {!criteriosLoading && criterios.length > 0 && (
@@ -126,19 +116,24 @@ export default function RubricaEvaluacion({ criterios, criteriosLoading, onSubmi
         )}
       </div>
 
+      {/* ✅ FIX: Calificación estimada siempre visible */}
       {criterios.length > 0 && (
         <div className="flex items-center justify-between rounded-xl bg-slate-50 border border-slate-200 px-4 py-3">
-          <span className="text-sm font-medium text-slate-600">Calificación final estimada</span>
+          <span className="text-sm font-medium text-slate-600">Calificación estimada</span>
           <span className={`text-3xl font-bold tabular-nums ${promedioColor}`}>{promedio.toFixed(2)}</span>
         </div>
       )}
 
+      {/* ✅ FIX: botón deshabilitado si faltan exposición o alumno */}
+      {disableSubmit && (
+        <p className="text-xs text-amber-600 text-center">
+          Selecciona la exposición y el alumno evaluador para continuar
+        </p>
+      )}
+
       <div className="flex justify-end gap-3 pt-1">
-        <button type="button" onClick={onCancel}
-          className="rounded-lg px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-100 transition-colors">
-          Cancelar
-        </button>
-        <button type="submit" disabled={loading || criterios.length === 0}
+        <button type="submit"
+          disabled={loading || criterios.length === 0 || disableSubmit}
           className="rounded-lg bg-indigo-600 px-6 py-2 text-sm font-semibold text-white hover:bg-indigo-700 disabled:opacity-50 transition-colors">
           {loading ? 'Registrando…' : 'Registrar evaluación'}
         </button>
